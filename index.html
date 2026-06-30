@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>BrushBuddy</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --font-sans:'Inter',system-ui,sans-serif;
+  --surface-0:#f5f7fa;
+  --surface-1:#eef0f4;
+  --surface-2:#ffffff;
+  --border:rgba(0,0,0,0.08);
+  --border-strong:rgba(0,0,0,0.18);
+  --text-primary:#111827;
+  --text-secondary:#374151;
+  --text-muted:#9ca3af;
+  --blue:#0D47A1;
+  --blue-mid:#1565C0;
+  --blue-light:#1a7fd4;
+  --blue-pale:#E3F2FD;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:var(--font-sans);background:#e8edf5;}
+
+/* ── Phone shell ── */
+.pw{display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:1.5rem 0 2rem;}
+.phone{
+  width:375px;min-height:720px;
+  background:var(--surface-2);
+  border-radius:40px;
+  border:2px solid var(--border-strong);
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  position:relative;
+  box-shadow:0 20px 60px rgba(0,0,0,0.18);
+}
+@media(max-width:430px){
+  .pw{padding:0;}
+  .phone{width:100vw;min-height:100dvh;border-radius:0;border:none;}
+}
+
+/* ── Screens ── */
+.sc{display:none;flex-direction:column;flex:1;}
+.sc.active{display:flex;}
+
+/* ── Loading overlay ── */
+#loading-overlay{
+  position:absolute;inset:0;background:#0D47A1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:200;gap:16px;
+}
+#loading-overlay svg{animation:spin 1.2s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#loading-overlay p{color:rgba(255,255,255,0.7);font-size:13px;}
+
+/* ── Toast ── */
+#toast{
+  position:absolute;bottom:90px;left:50%;transform:translateX(-50%);
+  background:rgba(20,20,20,0.9);color:#fff;
+  padding:9px 18px;border-radius:20px;font-size:13px;
+  white-space:nowrap;opacity:0;transition:opacity .3s;pointer-events:none;z-index:300;
+}
+#toast.show{opacity:1;}
+
+/* ── Error banner ── */
+.err-banner{
+  background:#fde8e8;border:1px solid #f5c6c6;
+  border-radius:10px;padding:10px 14px;
+  font-size:13px;color:#c53030;margin-bottom:14px;display:none;
+}
+.err-banner.show{display:block;}
+
+/* ── Sidebar ── */
+.sidebar-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:50;display:none;}
+.sidebar-overlay.open{display:block;}
+.sidebar{position:absolute;top:0;left:-260px;width:260px;height:100%;background:#0D47A1;z-index:51;display:flex;flex-direction:column;transition:left .25s ease;border-radius:40px 0 0 40px;}
+.sidebar.open{left:0;}
+.sidebar-head{padding:48px 20px 20px;border-bottom:1px solid rgba(255,255,255,0.15);}
+.avatar{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#fff;margin-bottom:10px;}
+.sidebar-name{font-size:16px;font-weight:500;color:#fff;}
+.sidebar-email{font-size:12px;color:rgba(255,255,255,0.65);margin-top:2px;}
+.sidebar-body{flex:1;padding:16px 0;}
+.sidebar-label{font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.8px;text-transform:uppercase;padding:0 20px;margin-bottom:6px;margin-top:12px;}
+.sidebar-item{display:flex;align-items:center;gap:12px;padding:12px 20px;cursor:pointer;border:none;background:none;width:100%;font-family:var(--font-sans);text-align:left;}
+.sidebar-item:hover{background:rgba(255,255,255,0.08);}
+.sidebar-item i{font-size:20px;color:rgba(255,255,255,0.8);}
+.sidebar-item span{font-size:14px;color:#fff;}
+.sidebar-footer{padding:16px 0 24px;border-top:1px solid rgba(255,255,255,0.15);}
+.logout-btn{display:flex;align-items:center;gap:12px;padding:12px 20px;cursor:pointer;border:none;background:none;width:100%;font-family:var(--font-sans);}
+.logout-btn:hover{background:rgba(255,255,255,0.08);}
+.logout-btn i{font-size:20px;color:rgba(255,200,200,0.9);}
+.logout-btn span{font-size:14px;color:rgba(255,200,200,0.9);}
+
+/* ── Status bar ── */
+.sb2{background:#0D47A1;padding:12px 20px 8px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.sb2 span{color:#fff;font-size:11px;font-weight:500;}
+.hbtn{background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;}
+.hbtn i{font-size:22px;color:#fff;}
+
+/* ── App header ── */
+.ah{background:#0D47A1;padding:8px 20px 18px;color:#fff;flex-shrink:0;}
+.ah h1{font-size:22px;font-weight:500;}
+.ah p{font-size:13px;opacity:.8;margin-top:1px;}
+.hr2{display:flex;justify-content:space-between;align-items:flex-start;}
+.stk{background:rgba(255,255,255,.18);border-radius:20px;padding:4px 12px;font-size:12px;color:#fff;display:flex;align-items:center;gap:4px;}
+
+/* ── Scrollable content ── */
+.scr{flex:1;overflow-y:auto;padding:16px;background:var(--surface-0);}
+.sl{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-weight:500;margin:0 0 10px;}
+.sg{margin-bottom:18px;}
+
+/* ── Cards ── */
+.pc{background:var(--surface-2);border-radius:14px;border:.5px solid var(--border);padding:16px;margin-bottom:12px;}
+.ph2{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.pt{font-size:14px;font-weight:500;color:var(--text-primary);}
+.pp{font-size:14px;font-weight:500;color:var(--blue-mid);}
+.pbb{height:8px;background:var(--surface-0);border-radius:4px;overflow:hidden;margin-bottom:5px;}
+.pbf{height:100%;border-radius:4px;background:var(--blue-light);transition:width .4s;}
+.ps{font-size:12px;color:var(--text-muted);}
+
+/* ── Habit cards ── */
+.hc{background:var(--surface-2);border-radius:14px;border:.5px solid var(--border);padding:0;margin-bottom:10px;overflow:hidden;}
+.hc-main{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;user-select:none;}
+.hi{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.him{background:#FFF3E0;}.hie{background:#E8EAF6;}.hif{background:#F3E5F5;}
+.hinfo{flex:1;}
+.ht{font-size:15px;font-weight:500;color:var(--text-primary);}
+.hs2{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.cc{width:28px;height:28px;border-radius:50%;border:2px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+.cc.done{background:var(--blue-light);border-color:var(--blue-light);}
+.cc.done::after{content:'';width:8px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px);display:block;}
+.start-btn{display:flex;align-items:center;gap:8px;padding:10px 16px 12px;border-top:.5px solid var(--border);cursor:pointer;background:none;border-left:none;border-right:none;border-bottom:none;width:100%;font-family:var(--font-sans);}
+.start-btn i{font-size:15px;color:var(--blue-light);}
+.start-btn span{font-size:13px;color:var(--blue-light);font-weight:500;}
+
+/* ── Week dots ── */
+.wr{display:flex;gap:4px;margin-bottom:10px;}
+.dd2{flex:1;text-align:center;}
+.dd2 .dl{font-size:10px;color:var(--text-muted);margin-bottom:4px;}
+.dc{width:30px;height:30px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;}
+.dc.full{background:var(--blue-light);color:#fff;}
+.dc.partial{background:#90CAF9;color:#0D47A1;}
+.dc.none2{background:var(--surface-1);color:var(--text-muted);border:.5px solid var(--border);}
+.dc.today{border:2px solid var(--blue-light);background:var(--blue-pale);color:var(--blue-light);}
+
+/* ── Stat boxes ── */
+.sm{background:var(--surface-2);border-radius:12px;border:.5px solid var(--border);padding:12px 8px;text-align:center;}
+.sm .num{font-size:20px;font-weight:500;color:var(--blue-mid);}
+.sm .lbl{font-size:11px;color:var(--text-muted);margin-top:2px;}
+
+/* ── Reminder cards ── */
+.rc{background:var(--surface-2);border-radius:14px;border:.5px solid var(--border);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
+.tg{width:42px;height:24px;border-radius:12px;background:var(--blue-light);position:relative;cursor:pointer;flex-shrink:0;transition:background .2s;}
+.tg.off{background:var(--border-strong);}
+.tg::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:21px;transition:left .15s;}
+.tg.off::after{left:3px;}
+
+/* ── Technique tabs ── */
+.ttrow{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.tt{padding:6px 14px;border-radius:20px;font-size:13px;border:.5px solid var(--border-strong);background:var(--surface-2);color:var(--text-secondary);cursor:pointer;font-family:var(--font-sans);}
+.tt.active{background:#0D47A1;color:#fff;border-color:#0D47A1;}
+.tcn{display:none;}
+.tcn.active{display:block;}
+.tcc{background:var(--surface-2);border-radius:14px;border:.5px solid var(--border);padding:14px 16px;margin-bottom:10px;}
+.srow{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;}
+.sn{width:22px;height:22px;border-radius:50%;background:var(--blue-pale);color:var(--blue-mid);font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.stxt{font-size:13px;color:var(--text-primary);line-height:1.5;}
+.tb2{background:var(--blue-pale);border-radius:10px;padding:10px 14px;margin-top:8px;}
+.tb2 p{font-size:12px;color:var(--blue-mid);line-height:1.5;}
+.tbl{font-size:10px;font-weight:500;color:#0D47A1;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;}
+
+/* ── Bottom nav ── */
+.bn{background:var(--surface-2);border-top:.5px solid var(--border);display:flex;padding:8px 0 12px;flex-shrink:0;}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px;border:none;background:none;font-family:var(--font-sans);}
+.ni i{font-size:22px;color:var(--text-muted);}
+.ni span{font-size:10px;color:var(--text-muted);}
+.ni.active i,.ni.active span{color:#0D47A1;}
+
+/* ── Legend ── */
+.rl{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);}
+.rd{width:8px;height:8px;border-radius:50%;}
+
+/* ── Progress tabs ── */
+.prog-tab-row{display:flex;gap:0;margin-bottom:16px;background:var(--surface-1);border-radius:10px;padding:3px;}
+.prog-tab{flex:1;padding:8px;border-radius:8px;font-size:13px;border:none;background:none;color:var(--text-muted);cursor:pointer;font-family:var(--font-sans);}
+.prog-tab.active{background:#0D47A1;color:#fff;}
+.prog-content{display:none;}
+.prog-content.active{display:block;}
+
+/* ── Calendar ── */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;}
+.cal-day-hdr{font-size:10px;color:var(--text-muted);padding:2px;}
+.cal-cell{width:28px;height:28px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;}
+.cal-full{background:#0D47A1;color:#fff;}
+.cal-partial{background:#90CAF9;color:#0D47A1;}
+.cal-miss{background:var(--surface-1);color:var(--text-muted);border:.5px solid var(--border);}
+.cal-today{border:2px solid #0D47A1;background:var(--blue-pale);color:#0D47A1;}
+.cal-future{color:var(--text-muted);font-size:10px;}
+.cal-empty{width:28px;height:28px;}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.cal-nav-btn{background:none;border:.5px solid var(--border-strong);border-radius:8px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.cal-nav-btn i{font-size:16px;color:var(--text-secondary);}
+.cal-month-label{font-size:14px;font-weight:500;color:var(--text-primary);}
+
+/* ── Timer ── */
+.timer-screen{flex:1;display:flex;flex-direction:column;background:#0D47A1;}
+.timer-back{padding:10px 20px 4px;cursor:pointer;}
+.timer-back span{color:rgba(255,255,255,.85);font-size:14px;}
+.timer-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 32px 40px;}
+.timer-label{font-size:14px;color:rgba(255,255,255,.7);margin-bottom:6px;letter-spacing:.5px;}
+.timer-habit{font-size:20px;font-weight:500;color:#fff;margin-bottom:36px;text-align:center;}
+.timer-ring-wrap{position:relative;width:200px;height:200px;margin-bottom:32px;}
+.timer-ring-wrap svg{width:200px;height:200px;}
+.timer-time{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+.timer-digits{font-size:48px;font-weight:500;color:#fff;line-height:1;}
+.timer-sub{font-size:13px;color:rgba(255,255,255,.6);margin-top:6px;}
+.timer-msg{font-size:14px;color:rgba(255,255,255,.85);text-align:center;margin-bottom:28px;min-height:20px;}
+.timer-play{width:68px;height:68px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;margin-bottom:14px;}
+.timer-play i{font-size:28px;color:#0D47A1;}
+.timer-reset{background:none;border:1.5px solid rgba(255,255,255,.35);border-radius:20px;padding:8px 24px;color:rgba(255,255,255,.8);font-size:13px;cursor:pointer;font-family:var(--font-sans);}
+.timer-done{background:#fff;border:none;border-radius:12px;padding:13px 28px;color:#0D47A1;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font-sans);margin-top:10px;display:none;}
+
+/* ── Auth screens ── */
+.splash-bg{flex:1;background:#0D47A1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;}
+.auth-header{background:#0D47A1;padding:6px 20px 20px;display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.fb{flex:1;padding:24px;overflow-y:auto;}
+
+/* ── Form inputs (real this time!) ── */
+.field-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block;}
+.field-wrap{margin-bottom:16px;}
+.real-input{
+  width:100%;padding:11px 14px;border-radius:10px;
+  border:.5px solid var(--border-strong);
+  background:var(--surface-1);
+  font-size:14px;color:var(--text-primary);
+  font-family:var(--font-sans);
+  outline:none;transition:border-color .2s;
+}
+.real-input:focus{border-color:var(--blue-light);background:#fff;}
+.real-input::placeholder{color:var(--text-muted);}
+.input-wrap{position:relative;}
+.input-wrap .real-input{padding-right:40px;}
+.eye-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;}
+.real-select{
+  width:100%;padding:11px 14px;border-radius:10px;
+  border:.5px solid var(--border-strong);
+  background:var(--surface-1);
+  font-size:14px;color:var(--text-primary);
+  font-family:var(--font-sans);
+  outline:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+}
+.checkbox-row{display:flex;align-items:flex-start;gap:10px;margin:12px 0;}
+.real-cb{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--blue-light);accent-color:#0D47A1;flex-shrink:0;margin-top:2px;cursor:pointer;}
+.cb-text{font-size:11px;color:var(--text-muted);line-height:1.5;}
+.cb-link{color:var(--blue-mid);}
+
+.btn-primary{width:100%;padding:14px;border-radius:12px;background:#fff;color:#0D47A1;font-size:15px;font-weight:500;border:none;cursor:pointer;font-family:var(--font-sans);margin-bottom:12px;}
+.btn-primary:active{opacity:.85;}
+.btn-outline{width:100%;padding:14px;border-radius:12px;background:transparent;color:#fff;font-size:15px;font-weight:500;border:1.5px solid rgba(255,255,255,.5);cursor:pointer;font-family:var(--font-sans);}
+.btn-solid{width:100%;padding:14px;border-radius:12px;background:#0D47A1;color:#fff;font-size:15px;font-weight:500;border:none;cursor:pointer;font-family:var(--font-sans);margin-top:4px;transition:opacity .2s;}
+.btn-solid:disabled{opacity:.55;cursor:not-allowed;}
+.btn-solid.loading::after{content:' …';}
+.divider-row{display:flex;align-items:center;gap:10px;margin:14px 0;}
+.divider-line{flex:1;height:.5px;background:var(--border);}
+.divider-text{font-size:12px;color:var(--text-muted);}
+.social-btn{width:100%;padding:11px 14px;border-radius:10px;border:.5px solid var(--border-strong);background:var(--surface-2);font-size:14px;color:var(--text-primary);cursor:pointer;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;}
+.link-row{text-align:center;font-size:13px;color:var(--text-muted);margin-top:12px;}
+.link-text{color:var(--blue-mid);cursor:pointer;font-weight:500;}
+.forgot-link{text-align:center;font-size:13px;color:var(--blue-mid);margin:12px 0 4px;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="pw">
+<div class="phone" id="phone">
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <svg width="40" height="40" viewBox="0 0 40 40">
+    <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="4"/>
+    <path d="M20 4 a16 16 0 0 1 16 16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  </svg>
+  <p>Loading BrushBuddy…</p>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Sidebar overlay -->
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-head">
+    <div class="avatar" id="sb-avatar">?</div>
+    <div class="sidebar-name" id="sb-name">—</div>
+    <div class="sidebar-email" id="sb-email">—</div>
+  </div>
+  <div class="sidebar-body">
+    <div class="sidebar-label">Navigation</div>
+    <button class="sidebar-item" onclick="sideNav('home')"><i class="ti ti-home"></i><span>Home</span></button>
+    <button class="sidebar-item" onclick="sideNav('reminders')"><i class="ti ti-bell"></i><span>Reminders</span></button>
+    <button class="sidebar-item" onclick="sideNav('techniques')"><i class="ti ti-book"></i><span>Technique guide</span></button>
+    <div class="sidebar-label">Progress</div>
+    <button class="sidebar-item" onclick="openProgress('weekly')"><i class="ti ti-calendar-week"></i><span>Weekly progress</span></button>
+    <button class="sidebar-item" onclick="openProgress('monthly')"><i class="ti ti-calendar-month"></i><span>Monthly progress</span></button>
+  </div>
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="doLogout()"><i class="ti ti-logout"></i><span>Log out</span></button>
+  </div>
+</div>
+
+<!-- Global status bar (shown when logged in) -->
+<div class="sb2" id="global-sb" style="display:none;">
+  <button class="hbtn" onclick="openSidebar()"><i class="ti ti-menu-2"></i></button>
+  <span id="live-time">9:41</span>
+  <span>●●●</span>
+</div>
+
+<!-- ══════════════ SPLASH ══════════════ -->
+<div class="sc active" id="sc-splash" style="background:#0D47A1;">
+  <div class="splash-bg">
+    <svg width="96" height="96" viewBox="0 0 200 200" style="margin-bottom:12px;">
+      <circle cx="100" cy="100" r="90" fill="none" stroke="#29B6F6" stroke-width="4" opacity="0.5"/>
+      <circle cx="100" cy="100" r="78" fill="none" stroke="#26C6DA" stroke-width="3" opacity="0.6"/>
+      <circle cx="100" cy="100" r="66" fill="none" stroke="#4DD0E1" stroke-width="2.5" opacity="0.7"/>
+      <path d="M75 55 Q72 45 80 40 Q100 32 120 40 Q128 45 125 55 Q130 75 125 95 Q118 120 100 130 Q82 120 75 95 Q70 75 75 55Z" fill="#fff"/>
+      <path d="M80 42 Q100 34 120 42 Q126 54 122 78 Q118 118 100 128 Q100 90 92 75 Q85 90 78 78 Q74 54 80 42Z" fill="#1565C0"/>
+      <path d="M100 128 L90 155 Q88 162 95 165 Q100 167 100 155 L100 128Z" fill="#1565C0"/>
+      <path d="M100 128 L110 155 Q112 162 105 165 Q100 167 100 155 L100 128Z" fill="#1565C0"/>
+    </svg>
+    <div style="font-size:28px;font-weight:600;color:#fff;letter-spacing:1px;margin-bottom:8px;">BRUSHBUDDY</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.75);margin-bottom:48px;line-height:1.6;">Your daily dental companion.<br>Brighter habits, healthier smiles.</div>
+    <button class="btn-primary" onclick="goTo('sc-signin')">Sign in</button>
+    <button class="btn-outline" onclick="goTo('sc-signup')">Create account</button>
+    <div style="margin-top:20px;font-size:11px;color:rgba(255,255,255,.4);">© 2025 BrushBuddy</div>
+  </div>
+</div>
+
+<!-- ══════════════ SIGN IN ══════════════ -->
+<div class="sc" id="sc-signin" style="flex-direction:column;background:var(--surface-2);">
+  <div class="auth-header">
+    <svg width="48" height="48" viewBox="0 0 200 200"><circle cx="100" cy="100" r="90" fill="none" stroke="#29B6F6" stroke-width="5" opacity="0.5"/><circle cx="100" cy="100" r="74" fill="none" stroke="#4DD0E1" stroke-width="3" opacity="0.6"/><path d="M75 55 Q72 45 80 40 Q100 32 120 40 Q128 45 125 55 Q130 75 125 95 Q118 120 100 130 Q82 120 75 95 Q70 75 75 55Z" fill="#fff"/><path d="M80 42 Q100 34 120 42 Q126 54 122 78 Q118 118 100 128 Q100 90 92 75 Q85 90 78 78 Q74 54 80 42Z" fill="#1565C0"/><path d="M100 128 L90 155 Q88 162 95 165 Q100 167 100 155 L100 128Z" fill="#1565C0"/><path d="M100 128 L110 155 Q112 162 105 165 Q100 167 100 155 L100 128Z" fill="#1565C0"/></svg>
+    <div style="font-size:10px;color:rgba(255,255,255,.65);margin-top:4px;letter-spacing:.5px;">BRUSHBUDDY</div>
+  </div>
+  <div class="fb">
+    <div class="err-banner" id="signin-err"></div>
+    <div class="field-wrap">
+      <label class="field-label" for="signin-email">Email</label>
+      <input class="real-input" id="signin-email" type="email" placeholder="your@email.com" autocomplete="email"/>
+    </div>
+    <div class="field-wrap">
+      <label class="field-label" for="signin-pw">Password</label>
+      <div class="input-wrap">
+        <input class="real-input" id="signin-pw" type="password" placeholder="••••••••" autocomplete="current-password"/>
+        <button class="eye-toggle" type="button" onclick="togglePw('signin-pw',this)"><i class="ti ti-eye"></i></button>
+      </div>
+    </div>
+    <button class="btn-solid" id="signin-btn" onclick="doSignIn()">Sign in</button>
+    <div class="forgot-link" onclick="doForgotPassword()">Forgot password?</div>
+    <div class="divider-row"><div class="divider-line"></div><div class="divider-text">or</div><div class="divider-line"></div></div>
+    <button class="social-btn" onclick="doGoogleSignIn()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continue with Google
+    </button>
+    <div class="link-row">Don't have an account? <span class="link-text" onclick="goTo('sc-signup')">Sign up</span></div>
+  </div>
+</div>
+
+<!-- ══════════════ SIGN UP ══════════════ -->
+<div class="sc" id="sc-signup" style="flex-direction:column;background:var(--surface-2);">
+  <div style="background:#0D47A1;padding:12px 20px 14px;cursor:pointer;" onclick="goTo('sc-splash')">
+    <span style="color:rgba(255,255,255,.85);font-size:14px;">← Back</span>
+  </div>
+  <div class="fb">
+    <div style="font-size:20px;font-weight:500;color:var(--text-primary);margin-bottom:20px;">Create account</div>
+    <div class="err-banner" id="signup-err"></div>
+    <div class="field-wrap">
+      <label class="field-label" for="signup-name">Full name</label>
+      <input class="real-input" id="signup-name" type="text" placeholder="Your full name" autocomplete="name"/>
+    </div>
+    <div class="field-wrap">
+      <label class="field-label" for="signup-email">Email</label>
+      <input class="real-input" id="signup-email" type="email" placeholder="your@email.com" autocomplete="email"/>
+    </div>
+    <div class="field-wrap">
+      <label class="field-label" for="signup-profile">Who are you brushing for?</label>
+      <select class="real-select" id="signup-profile">
+        <option value="adult">Adult</option>
+        <option value="kids">Parent (for kids)</option>
+        <option value="braces">Braces</option>
+        <option value="dentures">Dentures</option>
+      </select>
+    </div>
+    <div class="field-wrap">
+      <label class="field-label" for="signup-pw">Password</label>
+      <div class="input-wrap">
+        <input class="real-input" id="signup-pw" type="password" placeholder="At least 6 characters" autocomplete="new-password"/>
+        <button class="eye-toggle" type="button" onclick="togglePw('signup-pw',this)"><i class="ti ti-eye"></i></button>
+      </div>
+    </div>
+    <div class="field-wrap">
+      <label class="field-label" for="signup-pw2">Confirm password</label>
+      <div class="input-wrap">
+        <input class="real-input" id="signup-pw2" type="password" placeholder="Repeat password" autocomplete="new-password"/>
+        <button class="eye-toggle" type="button" onclick="togglePw('signup-pw2',this)"><i class="ti ti-eye"></i></button>
+      </div>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" class="real-cb" id="signup-terms"/>
+      <label for="signup-terms" class="cb-text">I agree to the <span class="cb-link">Terms &amp; Conditions</span> and <span class="cb-link">Privacy Policy</span></label>
+    </div>
+    <button class="btn-solid" id="signup-btn" onclick="doSignUp()">Create account</button>
+    <div class="link-row">Already have an account? <span class="link-text" onclick="goTo('sc-signin')">Sign in</span></div>
+  </div>
+</div>
+
+<!-- ══════════════ HOME ══════════════ -->
+<div class="sc" id="sc-home" style="flex-direction:column;">
+  <div class="ah">
+    <div class="hr2">
+      <div><p id="home-greeting">Good morning!</p><h1>Today's habits</h1></div>
+      <div class="stk" id="streak-badge">🔥 0 days</div>
+    </div>
+  </div>
+  <div class="scr">
+    <div class="sg">
+      <p class="sl">Today's progress</p>
+      <div class="pc">
+        <div class="ph2"><span class="pt">Daily completion</span><span class="pp" id="pct-lbl">0%</span></div>
+        <div class="pbb"><div class="pbf" id="pct-bar" style="width:0%"></div></div>
+        <p class="ps" id="pct-sub">0 of 3 habits done</p>
+      </div>
+    </div>
+    <div class="sg">
+      <p class="sl">Today's habits</p>
+      <div class="hc">
+        <div class="hc-main" onclick="toggleH('h1')">
+          <div class="hi him">🌅</div>
+          <div class="hinfo"><div class="ht">Morning brush</div><div class="hs2">After breakfast · 2 min</div></div>
+          <div class="cc" id="h1"></div>
+        </div>
+        <button class="start-btn" id="sb-h1" onclick="openTimer('morning')">
+          <i class="ti ti-player-play"></i><span>Start brushing</span>
+        </button>
+      </div>
+      <div class="hc">
+        <div class="hc-main" onclick="toggleH('h2')">
+          <div class="hi hie">🌙</div>
+          <div class="hinfo"><div class="ht">Evening brush</div><div class="hs2">After dinner · 2 min</div></div>
+          <div class="cc" id="h2"></div>
+        </div>
+        <button class="start-btn" id="sb-h2" onclick="openTimer('evening')">
+          <i class="ti ti-player-play"></i><span>Start brushing</span>
+        </button>
+      </div>
+      <div class="hc">
+        <div class="hc-main" onclick="toggleH('h3')">
+          <div class="hi hif">🧵</div>
+          <div class="hinfo"><div class="ht">Daily floss</div><div class="hs2">Any time today</div></div>
+          <div class="cc" id="h3"></div>
+        </div>
+      </div>
+    </div>
+    <div class="sg">
+      <p class="sl">This week</p>
+      <div class="pc" id="weekly-dots-home"></div>
+    </div>
+  </div>
+  <div class="bn">
+    <button class="ni active" onclick="switchM('home',this)"><i class="ti ti-home"></i><span>Home</span></button>
+    <button class="ni" onclick="switchM('progress',this)"><i class="ti ti-chart-bar"></i><span>Progress</span></button>
+    <button class="ni" onclick="switchM('reminders',this)"><i class="ti ti-bell"></i><span>Reminders</span></button>
+    <button class="ni" onclick="switchM('techniques',this)"><i class="ti ti-book"></i><span>Technique</span></button>
+  </div>
+</div>
+
+<!-- ══════════════ PROGRESS ══════════════ -->
+<div class="sc" id="sc-progress" style="flex-direction:column;">
+  <div class="ah"><h1>Progress</h1></div>
+  <div class="scr">
+    <div class="prog-tab-row">
+      <button class="prog-tab active" id="ptab-weekly" onclick="switchProgTab('weekly')">Weekly</button>
+      <button class="prog-tab" id="ptab-monthly" onclick="switchProgTab('monthly')">Monthly</button>
+    </div>
+    <div class="prog-content active" id="pc-weekly">
+      <div class="sg">
+        <p class="sl" id="weekly-range-label">This week</p>
+        <div class="pc" id="weekly-dots-progress"></div>
+      </div>
+      <div class="sg">
+        <p class="sl">Weekly score</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+          <div class="sm"><div class="num" id="w-active">0</div><div class="lbl">days active</div></div>
+          <div class="sm"><div class="num" id="w-done">0</div><div class="lbl">habits done</div></div>
+          <div class="sm"><div class="num" id="w-pct">0%</div><div class="lbl">completion</div></div>
+        </div>
+      </div>
+      <div class="sg">
+        <p class="sl">Habit breakdown</p>
+        <div class="pc">
+          <div style="margin-bottom:14px;"><div class="ph2"><span class="pt">🌅 Morning brush</span><span class="pp" id="wb-morning">0%</span></div><div class="pbb"><div class="pbf" id="wbbar-morning" style="width:0%;background:#0D47A1"></div></div></div>
+          <div style="margin-bottom:14px;"><div class="ph2"><span class="pt">🌙 Evening brush</span><span class="pp" id="wb-evening">0%</span></div><div class="pbb"><div class="pbf" id="wbbar-evening" style="width:0%;background:#1565C0"></div></div></div>
+          <div><div class="ph2"><span class="pt">🧵 Flossing</span><span class="pp" id="wb-floss">0%</span></div><div class="pbb"><div class="pbf" id="wbbar-floss" style="width:0%;background:#29B6F6"></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="prog-content" id="pc-monthly">
+      <div class="sg">
+        <p class="sl">Monthly score</p>
+        <div class="pc" style="text-align:center;padding:20px 16px;">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="46" fill="none" stroke="var(--surface-0)" stroke-width="9"/>
+            <circle cx="55" cy="55" r="46" fill="none" stroke="#90CAF9" stroke-width="9" stroke-dasharray="289" stroke-dashoffset="0"/>
+            <circle id="monthly-ring" cx="55" cy="55" r="46" fill="none" stroke="#0D47A1" stroke-width="9" stroke-dasharray="289" stroke-dashoffset="289" stroke-linecap="round" transform="rotate(-90 55 55)"/>
+            <text id="monthly-pct-txt" x="55" y="51" text-anchor="middle" font-size="20" font-weight="500" fill="#0D47A1">0%</text>
+            <text id="monthly-sub-txt" x="55" y="65" text-anchor="middle" font-size="10" fill="#9ca3af">this month</text>
+          </svg>
+          <p id="monthly-msg" style="font-size:13px;color:var(--text-secondary);margin-top:8px;">Start logging your habits!</p>
+        </div>
+      </div>
+      <div class="sg">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+          <div class="sm"><div class="num" id="m-streak">0</div><div class="lbl">day streak</div></div>
+          <div class="sm"><div class="num" id="m-days">0</div><div class="lbl">days done</div></div>
+          <div class="sm"><div class="num" id="m-perfect">0</div><div class="lbl">perfect days</div></div>
+        </div>
+      </div>
+      <div class="sg">
+        <p class="sl" id="cal-month-heading">Month</p>
+        <div class="pc">
+          <div class="cal-nav">
+            <button class="cal-nav-btn" onclick="shiftMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+            <span class="cal-month-label" id="cal-month-label">—</span>
+            <button class="cal-nav-btn" onclick="shiftMonth(1)"><i class="ti ti-chevron-right"></i></button>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+          <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;">
+            <div class="rl"><div class="rd" style="background:#0D47A1"></div>all done</div>
+            <div class="rl"><div class="rd" style="background:#90CAF9"></div>partial</div>
+            <div class="rl"><div class="rd" style="background:var(--surface-1);border:.5px solid var(--border)"></div>missed</div>
+          </div>
+        </div>
+      </div>
+      <div class="sg">
+        <p class="sl">Habit breakdown</p>
+        <div class="pc">
+          <div style="margin-bottom:14px;"><div class="ph2"><span class="pt">🌅 Morning brush</span><span class="pp" id="mb-morning">0%</span></div><div class="pbb"><div class="pbf" id="mbbar-morning" style="width:0%;background:#0D47A1"></div></div></div>
+          <div style="margin-bottom:14px;"><div class="ph2"><span class="pt">🌙 Evening brush</span><span class="pp" id="mb-evening">0%</span></div><div class="pbb"><div class="pbf" id="mbbar-evening" style="width:0%;background:#1565C0"></div></div></div>
+          <div><div class="ph2"><span class="pt">🧵 Flossing</span><span class="pp" id="mb-floss">0%</span></div><div class="pbb"><div class="pbf" id="mbbar-floss" style="width:0%;background:#29B6F6"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bn">
+    <button class="ni" onclick="switchM('home',this)"><i class="ti ti-home"></i><span>Home</span></button>
+    <button class="ni active" onclick="switchM('progress',this)"><i class="ti ti-chart-bar"></i><span>Progress</span></button>
+    <button class="ni" onclick="switchM('reminders',this)"><i class="ti ti-bell"></i><span>Reminders</span></button>
+    <button class="ni" onclick="switchM('techniques',this)"><i class="ti ti-book"></i><span>Technique</span></button>
+  </div>
+</div>
+
+<!-- ══════════════ REMINDERS ══════════════ -->
+<div class="sc" id="sc-reminders" style="flex-direction:column;">
+  <div class="ah"><h1>Reminders</h1></div>
+  <div class="scr">
+    <div class="sg">
+      <p class="sl">Scheduled</p>
+      <div class="rc"><div style="font-size:22px;">🌅</div><div style="flex:1;"><div style="font-size:14px;font-weight:500;color:var(--text-primary);">Morning brush</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">After breakfast · 8:30 AM</div></div><div class="tg" id="t1" onclick="togR('t1')"></div></div>
+      <div class="rc"><div style="font-size:22px;">🌙</div><div style="flex:1;"><div style="font-size:14px;font-weight:500;color:var(--text-primary);">Evening brush</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">After dinner · 8:00 PM</div></div><div class="tg" id="t2" onclick="togR('t2')"></div></div>
+      <div class="rc"><div style="font-size:22px;">🧵</div><div style="flex:1;"><div style="font-size:14px;font-weight:500;color:var(--text-primary);">Daily floss</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Before bed · 9:30 PM</div></div><div class="tg" id="t3" onclick="togR('t3')"></div></div>
+    </div>
+    <div class="sg">
+      <p class="sl">Extras</p>
+      <div class="rc"><div style="font-size:22px;">💬</div><div style="flex:1;"><div style="font-size:14px;font-weight:500;color:var(--text-primary);">Friendly nudges</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Encouraging messages</div></div><div class="tg" id="t4" onclick="togR('t4')"></div></div>
+      <div class="rc"><div style="font-size:22px;">🏆</div><div style="flex:1;"><div style="font-size:14px;font-weight:500;color:var(--text-primary);">Streak alerts</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Milestone notifications</div></div><div class="tg" id="t5" onclick="togR('t5')"></div></div>
+    </div>
+  </div>
+  <div class="bn">
+    <button class="ni" onclick="switchM('home',this)"><i class="ti ti-home"></i><span>Home</span></button>
+    <button class="ni" onclick="switchM('progress',this)"><i class="ti ti-chart-bar"></i><span>Progress</span></button>
+    <button class="ni active" onclick="switchM('reminders',this)"><i class="ti ti-bell"></i><span>Reminders</span></button>
+    <button class="ni" onclick="switchM('techniques',this)"><i class="ti ti-book"></i><span>Technique</span></button>
+  </div>
+</div>
+
+<!-- ══════════════ TECHNIQUES ══════════════ -->
+<div class="sc" id="sc-techniques" style="flex-direction:column;">
+  <div class="ah"><h1>Technique guide</h1></div>
+  <div class="scr">
+    <div class="ttrow">
+      <button class="tt active" onclick="swTech(this,'tc-a')">Adults</button>
+      <button class="tt" onclick="swTech(this,'tc-k')">Kids</button>
+      <button class="tt" onclick="swTech(this,'tc-b')">Braces</button>
+      <button class="tt" onclick="swTech(this,'tc-d')">Dentures</button>
+    </div>
+    <div class="tcn active" id="tc-a">
+      <div class="tcc"><p style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:12px;">Brushing — adults</p><div class="srow"><div class="sn">1</div><div class="stxt">Use a soft-bristled brush and a pea-sized amount of fluoride toothpaste.</div></div><div class="srow"><div class="sn">2</div><div class="stxt">Hold the brush at a 45° angle to your gums.</div></div><div class="srow"><div class="sn">3</div><div class="stxt">Use short, gentle circular strokes — never harsh scrubbing.</div></div><div class="srow" style="margin-bottom:0"><div class="sn">4</div><div class="stxt">Brush outer, inner, and chewing surfaces for 2 full minutes.</div></div><div class="tb2" style="margin-top:10px;"><div class="tbl">Pro tip</div><p>Use the built-in 2-minute timer on the home screen.</p></div></div>
+      <div class="tcc"><p style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:12px;">Flossing — adults</p><div class="srow"><div class="sn">1</div><div class="stxt">Use 18 inches of floss, sliding gently between teeth in a zigzag.</div></div><div class="srow" style="margin-bottom:0"><div class="sn">2</div><div class="stxt">Curve into a C-shape around each tooth and slide beneath the gumline.</div></div></div>
+    </div>
+    <div class="tcn" id="tc-k"><div class="tcc"><p style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:12px;">Brushing — children (ages 3–12)</p><div class="srow"><div class="sn">1</div><div class="stxt">Under 3: rice-grain of toothpaste. Ages 3–6: pea-sized amount.</div></div><div class="srow"><div class="sn">2</div><div class="stxt">Help children brush until they can tie their own shoelaces (age ~7–8).</div></div><div class="srow" style="margin-bottom:0"><div class="sn">3</div><div class="stxt">Spit but don't rinse — keeps fluoride protection on teeth.</div></div><div class="tb2" style="margin-top:10px;"><div class="tbl">Parent tip</div><p>Brush alongside your child — kids learn by watching.</p></div></div></div>
+    <div class="tcn" id="tc-b"><div class="tcc"><p style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:12px;">Brushing with braces</p><div class="srow"><div class="sn">1</div><div class="stxt">Brush at 45° above and below brackets to clean all surfaces.</div></div><div class="srow" style="margin-bottom:0"><div class="sn">2</div><div class="stxt">Brush after every meal — aim for 3 times daily minimum.</div></div><div class="tb2" style="margin-top:10px;"><div class="tbl">Must-have</div><p>Interdental brushes slide under the wire to clean between brackets.</p></div></div></div>
+    <div class="tcn" id="tc-d"><div class="tcc"><p style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:12px;">Cleaning full dentures</p><div class="srow"><div class="sn">1</div><div class="stxt">Use a soft denture brush and non-abrasive paste — never regular toothpaste.</div></div><div class="srow"><div class="sn">2</div><div class="stxt">Soak overnight in denture solution or plain water.</div></div><div class="srow" style="margin-bottom:0"><div class="sn">3</div><div class="stxt">Brush gums, tongue, and palate each morning before reinserting.</div></div><div class="tb2" style="margin-top:10px;"><div class="tbl">Important</div><p>Never sleep with dentures in — rest time prevents irritation.</p></div></div></div>
+  </div>
+  <div class="bn">
+    <button class="ni" onclick="switchM('home',this)"><i class="ti ti-home"></i><span>Home</span></button>
+    <button class="ni" onclick="switchM('progress',this)"><i class="ti ti-chart-bar"></i><span>Progress</span></button>
+    <button class="ni" onclick="switchM('reminders',this)"><i class="ti ti-bell"></i><span>Reminders</span></button>
+    <button class="ni active" onclick="switchM('techniques',this)"><i class="ti ti-book"></i><span>Technique</span></button>
+  </div>
+</div>
+
+<!-- ══════════════ TIMER ══════════════ -->
+<div class="sc" id="sc-timer" style="flex-direction:column;">
+  <div class="timer-screen">
+    <div class="timer-back" onclick="closeTimer()"><span>← Back to home</span></div>
+    <div class="timer-body">
+      <div class="timer-label">TIME TO BRUSH</div>
+      <div class="timer-habit" id="timer-habit-name">Morning brush</div>
+      <div class="timer-ring-wrap">
+        <svg viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="86" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="10"/>
+          <circle id="timer-arc" cx="100" cy="100" r="86" fill="none" stroke="#fff" stroke-width="10" stroke-dasharray="540" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 100 100)"/>
+        </svg>
+        <div class="timer-time">
+          <div class="timer-digits" id="timer-display">2:00</div>
+          <div class="timer-sub" id="timer-sub-txt">tap to start</div>
+        </div>
+      </div>
+      <div class="timer-msg" id="timer-msg">Get your toothbrush ready!</div>
+      <button class="timer-play" id="timer-play-btn" onclick="toggleTimer()">
+        <i class="ti ti-player-play" id="timer-icon"></i>
+      </button>
+      <button class="timer-reset" onclick="resetTimer()">Reset</button>
+      <button class="timer-done" id="timer-done-btn" onclick="timerDone()">Mark as done and go back</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /phone -->
+</div><!-- /pw -->
+
+<!-- ══════════════ FIREBASE ══════════════ -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged, updateProfile, GoogleAuthProvider,
+  signInWithPopup, sendPasswordResetEmail
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, collection,
+  query, where, getDocs, serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+// ─────────────────────────────────────────────
+// 🔴 PASTE YOUR FIREBASE CONFIG HERE
+// Go to: Firebase Console → Project Settings → Your apps → SDK setup
+// ─────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ── Constants ──────────────────────────────
+const TOTAL = 120, CIRC = 2 * Math.PI * 86;
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAY_SHORT   = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+// ── State ──────────────────────────────────
+let currentUser = null;
+let habitLog    = {};   // { "YYYY-MM-DD": { h1, h2, h3 } }
+let calViewYear, calViewMonth;
+let timerInterval = null, secondsLeft = TOTAL, running = false, currentHabit = 'morning';
+
+// ── Helpers ────────────────────────────────
+function dateKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function today(){ return new Date(); }
+function todayKey(){ return dateKey(today()); }
+function getLog(k){ return habitLog[k] || {h1:false,h2:false,h3:false}; }
+function dayScore(k){ const l=getLog(k); return (l.h1?1:0)+(l.h2?1:0)+(l.h3?1:0); }
+
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+function showErr(id,msg){ const el=document.getElementById(id); el.textContent=msg; el.classList.add('show'); }
+function clearErr(id){ const el=document.getElementById(id); el.textContent=''; el.classList.remove('show'); }
+function setLoading(show){ document.getElementById('loading-overlay').style.display=show?'flex':'none'; }
+
+// ── Firestore: save today's log ─────────────
+async function saveLog(key, data) {
+  if(!currentUser) return;
+  try {
+    const ref = doc(db, 'users', currentUser.uid, 'logs', key);
+    await setDoc(ref, { ...data, updatedAt: serverTimestamp() }, { merge: true });
+  } catch(e){ console.error('saveLog:', e); }
+}
+
+// ── Firestore: load all logs for a month range ─
+async function loadLogsForRange(startKey, endKey) {
+  if(!currentUser) return;
+  try {
+    const ref = collection(db, 'users', currentUser.uid, 'logs');
+    const snap = await getDocs(ref);
+    snap.forEach(d => {
+      const k = d.id;
+      if(k >= startKey && k <= endKey) habitLog[k] = d.data();
+    });
+  } catch(e){ console.error('loadLogs:', e); }
+}
+
+// ── Firestore: load today + surrounding window ──
+async function loadRecentLogs() {
+  if(!currentUser) return;
+  const now = today();
+  // Load current month + 2 months back to cover streak + weekly view
+  const start = new Date(now.getFullYear(), now.getMonth()-2, 1);
+  const startKey = dateKey(start);
+  const endKey   = dateKey(new Date(now.getFullYear(), now.getMonth()+1, 0));
+  await loadLogsForRange(startKey, endKey);
+}
+
+// ── Auth: sign up ───────────────────────────
+window.doSignUp = async function() {
+  clearErr('signup-err');
+  const name   = document.getElementById('signup-name').value.trim();
+  const email  = document.getElementById('signup-email').value.trim();
+  const pw     = document.getElementById('signup-pw').value;
+  const pw2    = document.getElementById('signup-pw2').value;
+  const terms  = document.getElementById('signup-terms').checked;
+  const profile= document.getElementById('signup-profile').value;
+
+  if(!name)        return showErr('signup-err','Please enter your full name.');
+  if(!email)       return showErr('signup-err','Please enter your email address.');
+  if(pw.length<6)  return showErr('signup-err','Password must be at least 6 characters.');
+  if(pw !== pw2)   return showErr('signup-err','Passwords do not match.');
+  if(!terms)       return showErr('signup-err','Please agree to the Terms & Conditions.');
+
+  const btn = document.getElementById('signup-btn');
+  btn.disabled = true; btn.textContent = 'Creating account…';
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pw);
+    await updateProfile(cred.user, { displayName: name });
+    // Save user profile to Firestore
+    await setDoc(doc(db, 'users', cred.user.uid), {
+      name, email, profile,
+      createdAt: serverTimestamp()
+    });
+    // onAuthStateChanged will handle the redirect
+  } catch(e) {
+    showErr('signup-err', friendlyAuthError(e.code));
+    btn.disabled = false; btn.textContent = 'Create account';
+  }
+};
+
+// ── Auth: sign in ───────────────────────────
+window.doSignIn = async function() {
+  clearErr('signin-err');
+  const email = document.getElementById('signin-email').value.trim();
+  const pw    = document.getElementById('signin-pw').value;
+  if(!email) return showErr('signin-err','Please enter your email.');
+  if(!pw)    return showErr('signin-err','Please enter your password.');
+
+  const btn = document.getElementById('signin-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    await signInWithEmailAndPassword(auth, email, pw);
+  } catch(e) {
+    showErr('signin-err', friendlyAuthError(e.code));
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+};
+
+// ── Auth: Google ────────────────────────────
+window.doGoogleSignIn = async function() {
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    // Ensure user doc exists
+    const ref = doc(db, 'users', user.uid);
+    const snap = await getDoc(ref);
+    if(!snap.exists()) {
+      await setDoc(ref, {
+        name: user.displayName || 'User',
+        email: user.email,
+        profile: 'adult',
+        createdAt: serverTimestamp()
+      });
+    }
+  } catch(e) { showToast('Google sign-in failed. Try again.'); }
+};
+
+// ── Auth: forgot password ───────────────────
+window.doForgotPassword = async function() {
+  const email = document.getElementById('signin-email').value.trim();
+  if(!email) return showErr('signin-err','Enter your email above first.');
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showToast('Password reset email sent!');
+  } catch(e) { showErr('signin-err', friendlyAuthError(e.code)); }
+};
+
+// ── Auth: logout ────────────────────────────
+window.doLogout = async function() {
+  closeSidebar();
+  habitLog = {};
+  await signOut(auth);
+};
+
+function friendlyAuthError(code) {
+  const map = {
+    'auth/user-not-found':      'No account found with that email.',
+    'auth/wrong-password':      'Incorrect password. Please try again.',
+    'auth/email-already-in-use':'An account with this email already exists.',
+    'auth/invalid-email':       'Please enter a valid email address.',
+    'auth/weak-password':       'Password must be at least 6 characters.',
+    'auth/too-many-requests':   'Too many attempts. Please try again later.',
+    'auth/invalid-credential':  'Incorrect email or password.',
+  };
+  return map[code] || 'Something went wrong. Please try again.';
+}
+
+// ── Auth state listener ─────────────────────
+onAuthStateChanged(auth, async user => {
+  setLoading(true);
+  if(user) {
+    currentUser = user;
+    // Load user profile
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if(snap.exists()) {
+        const data = snap.data();
+        document.getElementById('sb-name').textContent  = data.name || user.displayName || 'User';
+        document.getElementById('sb-email').textContent = data.email || user.email;
+        document.getElementById('sb-avatar').textContent = (data.name || user.displayName || 'U')[0].toUpperCase();
+      }
+    } catch(e) { console.error(e); }
+
+    await loadRecentLogs();
+    initCalView();
+    updateClock();
+    updateGreeting();
+    syncTodayUI();
+    renderWeekDots();
+    updateStreakBadge();
+    renderCalendar();
+    renderMonthlyStats();
+    document.getElementById('global-sb').style.display = 'flex';
+    document.getElementById('signin-btn').disabled = false;
+    document.getElementById('signin-btn').textContent = 'Sign in';
+    document.getElementById('signup-btn').disabled = false;
+    document.getElementById('signup-btn').textContent = 'Create account';
+    goTo('sc-home');
+  } else {
+    currentUser = null;
+    document.getElementById('global-sb').style.display = 'none';
+    goTo('sc-splash');
+  }
+  setLoading(false);
+});
+
+// ── Toggle habit ────────────────────────────
+window.toggleH = async function(id) {
+  const key = todayKey();
+  const l   = { ...getLog(key) };
+  l[id]     = !l[id];
+  habitLog[key] = l;
+
+  document.getElementById(id).classList.toggle('done', l[id]);
+  if(id==='h1') document.getElementById('sb-h1').style.display = l.h1?'none':'flex';
+  if(id==='h2') document.getElementById('sb-h2').style.display = l.h2?'none':'flex';
+  updateProgressBar();
+  renderWeekDots();
+  updateStreakBadge();
+
+  await saveLog(key, l);
+};
+
+// ── Progress bar ────────────────────────────
+function updateProgressBar() {
+  const l    = getLog(todayKey());
+  const done = (l.h1?1:0)+(l.h2?1:0)+(l.h3?1:0);
+  const pct  = Math.round((done/3)*100);
+  document.getElementById('pct-lbl').textContent   = pct+'%';
+  document.getElementById('pct-bar').style.width   = pct+'%';
+  document.getElementById('pct-sub').textContent   = done+' of 3 habits done';
+}
+
+function syncTodayUI() {
+  const l = getLog(todayKey());
+  ['h1','h2','h3'].forEach(id => document.getElementById(id).classList.toggle('done',!!l[id]));
+  document.getElementById('sb-h1').style.display = l.h1?'none':'flex';
+  document.getElementById('sb-h2').style.display = l.h2?'none':'flex';
+  updateProgressBar();
+}
+
+// ── Streak ──────────────────────────────────
+function calcStreak() {
+  let streak = 0;
+  const now  = today();
+  for(let i=0;;i++) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate()-i);
+    if(dayScore(dateKey(d)) > 0) streak++;
+    else break;
+  }
+  return streak;
+}
+function updateStreakBadge() {
+  const s = calcStreak();
+  document.getElementById('streak-badge').textContent = '🔥 '+s+(s===1?' day':' days');
+}
+
+// ── Greeting ────────────────────────────────
+function updateGreeting() {
+  const h = today().getHours();
+  const g = h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  const name = (document.getElementById('sb-name').textContent || '').split(' ')[0] || '';
+  document.getElementById('home-greeting').textContent = g+(name?', '+name:'')+'!';
+}
+
+// ── Clock ────────────────────────────────────
+function updateClock() {
+  const now = today();
+  document.getElementById('live-time').textContent =
+    String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+}
+setInterval(updateClock, 30000);
+
+// ── Week dots ───────────────────────────────
+function getMonday(d) {
+  const c   = new Date(d);
+  const day = c.getDay();
+  c.setDate(c.getDate()+(day===0?-6:1-day));
+  c.setHours(0,0,0,0);
+  return c;
+}
+
+function renderWeekDots() {
+  const now = today(), mon = getMonday(now), nowKey = todayKey();
+  const days = Array.from({length:7},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d; });
+
+  const sl = days[0].getDate()+' '+MONTH_NAMES[days[0].getMonth()].slice(0,3);
+  const el = days[6].getDate()+' '+MONTH_NAMES[days[6].getMonth()].slice(0,3)+' '+days[6].getFullYear();
+  document.getElementById('weekly-range-label').textContent = sl+' – '+el;
+
+  let totalDone=0,totalPoss=0,activeDays=0,h1d=0,h2d=0,h3d=0;
+
+  const dots = days.map((d,i)=>{
+    const k=dateKey(d), isFuture=d>now&&k!==nowKey, isToday=k===nowKey;
+    const score = isFuture?-1:dayScore(k);
+    if(!isFuture){ const l=getLog(k); if(l.h1)h1d++; if(l.h2)h2d++; if(l.h3)h3d++;
+      const s=(l.h1?1:0)+(l.h2?1:0)+(l.h3?1:0); totalDone+=s; totalPoss+=3; if(s>0)activeDays++; }
+    let cls,txt;
+    if(isFuture){cls='cal-future';txt=d.getDate();}
+    else if(score===3){cls='full';txt='3/3';}
+    else if(score>0){cls='partial';txt=score+'/3';}
+    else{cls=isToday?'today':'none2';txt=isToday?'0/3':d.getDate();}
+    return`<div class="dd2"><div class="dl">${DAY_SHORT[i]}</div><div class="dc ${cls}" style="width:36px;height:36px;font-size:11px;">${txt}</div></div>`;
+  }).join('');
+
+  const legend=`<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;"><div class="rl"><div class="rd" style="background:#1a7fd4"></div>all 3 done</div><div class="rl"><div class="rd" style="background:#90CAF9"></div>partial</div></div>`;
+  const html=`<div class="wr" style="margin-bottom:12px;">${dots}</div>${legend}`;
+  ['weekly-dots-home','weekly-dots-progress'].forEach(id=>{ const el=document.getElementById(id); if(el)el.innerHTML=html; });
+
+  const wkDays=Math.max(1,totalPoss/3);
+  const pct=totalPoss>0?Math.round((totalDone/totalPoss)*100):0;
+  document.getElementById('w-active').textContent=activeDays;
+  document.getElementById('w-done').textContent=totalDone;
+  document.getElementById('w-pct').textContent=pct+'%';
+  const h1p=Math.round((h1d/wkDays)*100), h2p=Math.round((h2d/wkDays)*100), h3p=Math.round((h3d/wkDays)*100);
+  document.getElementById('wb-morning').textContent=h1p+'%'; document.getElementById('wbbar-morning').style.width=h1p+'%';
+  document.getElementById('wb-evening').textContent=h2p+'%'; document.getElementById('wbbar-evening').style.width=h2p+'%';
+  document.getElementById('wb-floss').textContent=h3p+'%';   document.getElementById('wbbar-floss').style.width=h3p+'%';
+}
+
+// ── Calendar ─────────────────────────────────
+function initCalView(){ const n=today(); calViewYear=n.getFullYear(); calViewMonth=n.getMonth(); }
+
+function renderCalendar() {
+  const now=today(), yr=calViewYear, mo=calViewMonth;
+  const label=MONTH_NAMES[mo]+' '+yr;
+  document.getElementById('cal-month-label').textContent=label;
+  document.getElementById('cal-month-heading').textContent=label;
+
+  const firstDay=new Date(yr,mo,1).getDay(), offset=firstDay===0?6:firstDay-1;
+  const daysInMonth=new Date(yr,mo+1,0).getDate();
+  let html='<div class="cal-day-hdr">M</div><div class="cal-day-hdr">T</div><div class="cal-day-hdr">W</div><div class="cal-day-hdr">T</div><div class="cal-day-hdr">F</div><div class="cal-day-hdr">S</div><div class="cal-day-hdr">S</div>';
+  for(let i=0;i<offset;i++) html+='<div class="cal-empty"></div>';
+  for(let day=1;day<=daysInMonth;day++){
+    const d=new Date(yr,mo,day), k=dateKey(d);
+    const isFuture=d>now, isToday=k===todayKey(), score=dayScore(k);
+    let cls;
+    if(isFuture) cls='cal-future';
+    else if(score===3) cls='cal-full';
+    else if(score>0)   cls='cal-partial';
+    else if(isToday)   cls='cal-today';
+    else               cls='cal-miss';
+    html+=`<div class="cal-cell ${cls}">${day}</div>`;
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+}
+
+window.shiftMonth = async function(dir) {
+  calViewMonth+=dir;
+  if(calViewMonth>11){calViewMonth=0;calViewYear++;}
+  if(calViewMonth<0) {calViewMonth=11;calViewYear--;}
+  // Lazy-load logs for the newly viewed month
+  const start=dateKey(new Date(calViewYear,calViewMonth,1));
+  const end  =dateKey(new Date(calViewYear,calViewMonth+1,0));
+  await loadLogsForRange(start,end);
+  renderCalendar();
+  renderMonthlyStats();
+};
+
+// ── Monthly stats ────────────────────────────
+function renderMonthlyStats() {
+  const now=today(), yr=calViewYear, mo=calViewMonth;
+  const daysPast=yr<now.getFullYear()||(yr===now.getFullYear()&&mo<now.getMonth())
+    ?new Date(yr,mo+1,0).getDate():now.getDate();
+
+  let total=0,perfect=0,active=0,h1=0,h2=0,h3=0;
+  for(let d=1;d<=daysPast;d++){
+    const l=getLog(dateKey(new Date(yr,mo,d)));
+    const s=(l.h1?1:0)+(l.h2?1:0)+(l.h3?1:0);
+    total+=s; if(s===3)perfect++; if(s>0)active++;
+    if(l.h1)h1++; if(l.h2)h2++; if(l.h3)h3++;
+  }
+  const possible=daysPast*3, pct=possible>0?Math.round((total/possible)*100):0;
+  const offset=289-Math.round((pct/100)*289);
+  document.getElementById('monthly-ring').setAttribute('stroke-dashoffset',offset);
+  document.getElementById('monthly-pct-txt').textContent=pct+'%';
+  document.getElementById('monthly-sub-txt').textContent=MONTH_NAMES[mo].slice(0,3)+' '+yr;
+  document.getElementById('monthly-msg').textContent=pct>=80?'Great consistency! Keep it up.':pct>=50?'Good progress — keep going!':'Start logging your habits!';
+  document.getElementById('m-streak').textContent=calcStreak();
+  document.getElementById('m-days').textContent=active;
+  document.getElementById('m-perfect').textContent=perfect;
+  const h1p=daysPast>0?Math.round((h1/daysPast)*100):0;
+  const h2p=daysPast>0?Math.round((h2/daysPast)*100):0;
+  const h3p=daysPast>0?Math.round((h3/daysPast)*100):0;
+  document.getElementById('mb-morning').textContent=h1p+'%'; document.getElementById('mbbar-morning').style.width=h1p+'%';
+  document.getElementById('mb-evening').textContent=h2p+'%'; document.getElementById('mbbar-evening').style.width=h2p+'%';
+  document.getElementById('mb-floss').textContent=h3p+'%';   document.getElementById('mbbar-floss').style.width=h3p+'%';
+}
+
+// ── Timer ─────────────────────────────────────
+window.openTimer = function(which) {
+  currentHabit=which; resetTimer();
+  document.getElementById('timer-habit-name').textContent=which==='morning'?'Morning brush':'Evening brush';
+  document.querySelectorAll('.sc').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sc-timer').classList.add('active');
+  document.getElementById('global-sb').style.display='none';
+};
+window.closeTimer = function() {
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;} running=false;
+  goTo('sc-home');
+  document.getElementById('global-sb').style.display='flex';
+};
+window.toggleTimer = function() {
+  if(secondsLeft===0)return;
+  if(running){
+    clearInterval(timerInterval);timerInterval=null;running=false;
+    document.getElementById('timer-icon').className='ti ti-player-play';
+    document.getElementById('timer-sub-txt').textContent='tap to resume';
+    document.getElementById('timer-msg').textContent='Paused — keep going!';
+  } else {
+    running=true;
+    document.getElementById('timer-icon').className='ti ti-player-pause';
+    document.getElementById('timer-sub-txt').textContent='brushing…';
+    setMsg(secondsLeft);
+    timerInterval=setInterval(tick,1000);
+  }
+};
+function tick() {
+  secondsLeft--; renderTimerUI(); setMsg(secondsLeft);
+  if(secondsLeft<=0){
+    clearInterval(timerInterval);timerInterval=null;running=false;
+    document.getElementById('timer-icon').className='ti ti-check';
+    document.getElementById('timer-play-btn').style.background='#4CAF50';
+    document.getElementById('timer-play-btn').querySelector('i').style.color='#fff';
+    document.getElementById('timer-sub-txt').textContent='all done!';
+    document.getElementById('timer-msg').textContent='Amazing! Your teeth thank you! 🎉';
+    document.getElementById('timer-done-btn').style.display='block';
+  }
+}
+function renderTimerUI() {
+  const m=Math.floor(secondsLeft/60),s=secondsLeft%60;
+  document.getElementById('timer-display').textContent=m+':'+(s<10?'0':'')+s;
+  const off=CIRC*(secondsLeft/TOTAL);
+  document.getElementById('timer-arc').setAttribute('stroke-dashoffset',(CIRC-off).toFixed(1));
+}
+function setMsg(s) {
+  const msgs=[[120,91,'Get your toothbrush ready!'],[90,61,'Brush the outer surfaces first.'],[60,31,'Now the inner surfaces!'],[30,11,'Last stretch — chewing surfaces!'],[10,1,'Almost done, keep going!']];
+  for(const[hi,lo,msg] of msgs){if(s<=hi&&s>=lo){document.getElementById('timer-msg').textContent=msg;break;}}
+}
+window.resetTimer = function() {
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;} running=false; secondsLeft=TOTAL;
+  document.getElementById('timer-display').textContent='2:00';
+  document.getElementById('timer-sub-txt').textContent='tap to start';
+  document.getElementById('timer-msg').textContent='Get your toothbrush ready!';
+  document.getElementById('timer-icon').className='ti ti-player-play';
+  document.getElementById('timer-arc').setAttribute('stroke-dashoffset','0');
+  const pb=document.getElementById('timer-play-btn');
+  pb.style.background='#fff'; pb.querySelector('i').style.color='#0D47A1';
+  document.getElementById('timer-done-btn').style.display='none';
+};
+window.timerDone = async function() {
+  const hid=currentHabit==='morning'?'h1':'h2';
+  const key=todayKey(), l={...getLog(key)};
+  l[hid]=true; habitLog[key]=l;
+  document.getElementById(hid).classList.add('done');
+  document.getElementById(currentHabit==='morning'?'sb-h1':'sb-h2').style.display='none';
+  updateProgressBar(); renderWeekDots(); updateStreakBadge();
+  await saveLog(key,l);
+  closeTimer();
+  showToast('Habit logged! Great work 🦷');
+};
+
+// ── Navigation ────────────────────────────────
+window.goTo = function(id) {
+  document.querySelectorAll('.sc').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const authScreens=['sc-splash','sc-signin','sc-signup','sc-timer'];
+  document.getElementById('global-sb').style.display=authScreens.includes(id)||!currentUser?'none':'flex';
+};
+window.openSidebar  = ()=>{ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('open'); };
+window.closeSidebar = ()=>{ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); };
+window.sideNav = function(name) {
+  closeSidebar();
+  ['home','progress','reminders','techniques'].forEach(n=>document.getElementById('sc-'+n).classList.remove('active'));
+  document.getElementById('sc-'+name).classList.add('active');
+};
+window.openProgress = function(tab) {
+  closeSidebar(); switchProgTab(tab);
+  ['home','progress','reminders','techniques'].forEach(n=>document.getElementById('sc-'+n).classList.remove('active'));
+  document.getElementById('sc-progress').classList.add('active');
+};
+window.switchProgTab = function(tab) {
+  document.querySelectorAll('.prog-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.prog-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('ptab-'+tab).classList.add('active');
+  document.getElementById('pc-'+tab).classList.add('active');
+  if(tab==='monthly'){renderCalendar();renderMonthlyStats();}
+  if(tab==='weekly') renderWeekDots();
+};
+window.switchM = function(name,btn) {
+  ['home','progress','reminders','techniques'].forEach(n=>document.getElementById('sc-'+n).classList.remove('active'));
+  document.getElementById('sc-'+name).classList.add('active');
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  closeSidebar();
+};
+window.togR    = id=>document.getElementById(id).classList.toggle('off');
+window.swTech  = (btn,cid)=>{
+  document.querySelectorAll('.tt').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tcn').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active'); document.getElementById(cid).classList.add('active');
+};
+window.togglePw = (id,btn)=>{
+  const inp=document.getElementById(id);
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.querySelector('i').className=show?'ti ti-eye-off':'ti ti-eye';
+};
+</script>
+</body>
+</html>
